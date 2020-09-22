@@ -42,7 +42,47 @@ allprojects {
 }
 ```
 
-Download Android libindy binaries and copy them into `android/app/src/main/jniLibs`.
+NOT NEEDED: Download Android libindy binaries and copy them into `android/app/src/main/jniLibs`.
+
+
+Add the following to `MainActivity.java`:
+
+```java
+
+//...
+
+import android.os.Bundle;
+import android.system.ErrnoException;
+import android.system.Os;
+import java.io.File;
+
+public class MainActivity extends ReactActivity {
+  //...
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
+    try {
+      Os.setenv("EXTERNAL_STORAGE", getExternalFilesDir(null).getAbsolutePath(), true);
+      System.loadLibrary("indy");
+    } catch (ErrnoException e) {
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+Add to `android/app/build.gradle`:
+
+```groovy
+dependencies {
+    // ...
+    implementation 'net.java.dev.jna:jna:5.2.0'
+
+    // ...
+}
+```
 
 ## iOS
 

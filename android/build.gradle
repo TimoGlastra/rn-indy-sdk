@@ -94,6 +94,7 @@ dependencies {
     implementation 'com.facebook.react:react-native:+'  // From node_modules
     implementation 'org.hyperledger:indy:1.14.2'
     implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'net.java.dev.jna:jna:5.2.0'
 }
 
 def configureReactNativePom(def pom) {

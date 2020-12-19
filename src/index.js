@@ -15,7 +15,7 @@
  *
  */
 
-import { NativeModules } from 'react-native'
+import { NativeModules, NativeEventEmitter } from 'react-native'
 import { Buffer } from 'buffer'
 
 export type CredOffer = {
@@ -224,6 +224,11 @@ export type Verkey = string
 export type WalletHandle = number
 export type PoolHandle = number
 
+export type RuntimeConfig = {
+  crypto_thread_pool_size?: number,
+  collect_backtrace?: Boolean,
+}
+
 export type WalletRecord = {
   id: string,
   type: string,
@@ -255,6 +260,7 @@ export type GetNymResponse = {
 }
 
 const { IndySdk } = NativeModules
+let eventListener = null
 
 const indy = {
   // wallet
@@ -609,6 +615,28 @@ const indy = {
 
   async closeWalletSearch(sh: WalletSearchHandle): Promise<void> {
     return IndySdk.closeWalletSearch(sh)
+  },
+
+  // logger and config
+
+  async setRuntimeConfig(config: RuntimeConfig): Promise<void> {
+    return IndySdk.setRuntimeConfig(JSON.stringify(config))
+  },
+
+  async setLogger(
+    logFn: (level: number, target: string, message: string, modulePath: string, file: string, line: number) => void
+  ): Promise<void> {
+    const eventEmitter = new NativeEventEmitter(IndySdk)
+
+    if (eventListener) {
+      eventListener.remove()
+    }
+
+    eventListener = eventEmitter.addListener('LogCallback', ([level, target, message, modulePath, file, line]) => {
+      logFn(level, target, message, modulePath, file, line)
+    })
+
+    return IndySdk.setLogger()
   },
 }
 

@@ -18,8 +18,7 @@ import Foundation
 import Indy
 
 @objc(IndySdk)
-class IndySdk : NSObject {
-    
+class IndySdk : RCTEventEmitter {
     @objc func sampleMethod(_ stringArgument: String, numberArgument: NSNumber,
                             resolver resolve: @escaping RCTPromiseResolveBlock,
                             rejecter reject: @escaping RCTPromiseRejectBlock) {
@@ -414,6 +413,20 @@ class IndySdk : NSObject {
     @objc func closeWalletSearch(_ sh: NSNumber, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
         let shNumber:Int32 = Int32(truncating: sh)
         IndyNonSecrets.closeSearch(withHandle: shNumber, completion: completion(resolve, reject))
+    }
+
+    @objc func setRuntimeConfig(_ configJSON: String, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+        IndyUtils.setRuntimeConfig(configJSON)
+        resolve(nil)
+    }
+
+    @objc func setLogger(_ configJSON: String, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+        IndyLogger.setLogger((context: NSObject, level: NSNumber, target: String, message: String, modulePath: String, file: String, line: NSNumber) -> Void {
+          
+          self.sendEventWithName("EventReminder", [level, target, message, modulePath, file, line])
+        })
+
+        resolve(nil)
     }
     
     // completion functions

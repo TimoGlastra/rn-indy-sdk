@@ -25,6 +25,15 @@
 #import "React/RCTViewManager.h" // Required when used as a Pod in a Swift project
 #endif
 
+// import RCTEventEmitter
+#if __has_include(<React/RCTEventEmitter.h>)
+#import <React/RCTEventEmitter.h>
+#elif __has_include("RCTEventEmitter.h")
+#import "RCTEventEmitter.h"
+#else
+#import "React/RCTEventEmitter.h" // Required when used as a Pod in a Swift project
+#endif
+
 // import RCTEventDispatcher
 #if __has_include(<React/RCTEventDispatcher.h>)
 #import <React/RCTEventDispatcher.h>
@@ -35,7 +44,7 @@
 #endif
 
 
-@interface RCT_EXTERN_MODULE(IndySdk, NSObject)
+@interface RCT_EXTERN_MODULE(IndySdk, RCTEventEmitter)
 
 RCT_EXTERN_METHOD(sampleMethod: (NSString *)stringArgument numberArgument:(nonnull NSNumber *)numberArgument
                   resolver:(RCTPromiseResolveBlock)resolve
@@ -313,6 +322,17 @@ RCT_EXTERN_METHOD(fetchWalletSearchNextRecords: (nonnull NSNumber *)wh
 
 RCT_EXTERN_METHOD(closeWalletSearch: (nonnull NSNumber *)sh
                   resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject
+                  )
+
+// logging and config
+
+RCT_EXTERN_METHOD(setRuntimeConfig: (NSString *)configJSON
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject
+                  )
+
+RCT_EXTERN_METHOD(setLogger: (RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject
                   )
 

@@ -17,11 +17,14 @@
 package com.reactlibrary;
 
 import android.annotation.TargetApi;
+import android.util.Log;
 
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
+import com.facebook.react.bridge.Arguments;
 
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.WritableArray;
@@ -43,6 +46,11 @@ import org.hyperledger.indy.sdk.non_secrets.WalletSearch;
 import org.hyperledger.indy.sdk.pairwise.Pairwise;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+import org.hyperledger.indy.sdk.LibIndy;
+
+import com.sun.jna.Callback;
+import com.sun.jna.Pointer;
+import static com.sun.jna.Native.detach;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,6 +65,7 @@ public class IndySdkModule extends ReactContextBaseJavaModule {
     private Map<Integer, Wallet> walletMap;
     private Map<Integer, Pool> poolMap;
     private Map<Integer, WalletSearch> searchMap;
+    private Callback logger;
 
     public IndySdkModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -64,6 +73,8 @@ public class IndySdkModule extends ReactContextBaseJavaModule {
         this.walletMap = new ConcurrentHashMap<>();
         this.poolMap = new ConcurrentHashMap<>();
         this.searchMap = new ConcurrentHashMap<>();
+
+        this.logger = new IndyLogCallback(this.reactContext);
     }
 
     @Override
@@ -726,6 +737,58 @@ public class IndySdkModule extends ReactContextBaseJavaModule {
         } catch (Exception e) {
             IndySdkRejectResponse rejectResponse = new IndySdkRejectResponse(e);
             promise.reject(rejectResponse.getCode(), rejectResponse.toJson(), e);
+        }
+    }
+
+    // config and logger
+
+    @ReactMethod()
+    public void setRuntimeConfig(String configJson, Promise promise) {
+        try {
+            LibIndy.setRuntimeConfig(configJson);
+            promise.resolve(null);
+        } catch (Exception e) {
+            IndySdkRejectResponse rejectResponse = new IndySdkRejectResponse(e);
+            promise.reject(rejectResponse.getCode(), rejectResponse.toJson(), e);
+        }
+    }
+
+    @ReactMethod()
+
+    public void setLogger(Promise promise) {
+        try {
+            LibIndy.api.indy_set_logger(null, null, this.logger, null);
+            promise.resolve(null);
+        } catch (Exception e) {
+            IndySdkRejectResponse rejectResponse = new IndySdkRejectResponse(e);
+            promise.reject(rejectResponse.getCode(), rejectResponse.toJson(), e);
+        }
+    }
+
+    class IndyLogCallback implements Callback {
+        private final ReactApplicationContext reactContext;
+
+        public IndyLogCallback(ReactApplicationContext reactContext) {
+            super();
+
+            this.reactContext = reactContext;
+        }
+
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(Pointer context, int level, String target, String message, String module_path, String file, int line) {
+            detach(false);
+
+            WritableArray params = Arguments.createArray();
+            params.pushInt(level);
+            params.pushString(target);
+            params.pushString(message);
+            params.pushString(module_path);
+            params.pushString(file);
+            params.pushInt(line);
+
+            this.reactContext
+                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                .emit("LogCallback", params);
         }
     }
 

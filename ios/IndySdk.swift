@@ -17,8 +17,14 @@
 import Foundation
 import Indy
 
+struct WalletConfig: Codable {
+    var id: String
+}
+
 @objc(IndySdk)
 class IndySdk : NSObject {
+    
+    private var walletIdHandleDict: [String: Int32] = [:]
     
     @objc func sampleMethod(_ stringArgument: String, numberArgument: NSNumber,
                             resolver resolve: @escaping RCTPromiseResolveBlock,
@@ -37,9 +43,17 @@ class IndySdk : NSObject {
     @objc func openWallet(_ config: String, credentials: String,
                           resolver resolve: @escaping RCTPromiseResolveBlock,
                           rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+        
+      let decoder = JSONDecoder()
+      let walletConfig: WalletConfig = try decoder.decode(WalletConfig.self, from: config)
+        
+      // If wallet is already opened, return the wallet handle
+      if let walletHandle = walletIdHandleDict[walletConfig.id] {
+          resolve(walletHandle)
+      }
+
       let indyWallet = IndyWallet()
-      
-      indyWallet.open(withConfig: config, credentials: credentials, completion: completionWithIndyHandle(resolve, reject))
+      indyWallet.open(withConfig: config, credentials: credentials, completion: completionWithWalletHandle(resolve, reject, walletConfig.id))
     }
     
     @objc func closeWallet(_ walletHandle: NSNumber,
@@ -47,6 +61,13 @@ class IndySdk : NSObject {
                          rejecter reject: @escaping RCTPromiseRejectBlock) {
       let whNumber:Int32  = Int32(walletHandle)
       let indyWallet = IndyWallet()
+        
+      // Remove wallet handle map
+      for (walletId, walletHandle) in walletIdHandleDict {
+          if walletHandle == whNumber {
+              walletIdHandleDict.removeValue(forKey: walletId)
+          }
+      }
       
       indyWallet.close(withHandle: whNumber, completion: completion(resolve, reject))
     }
@@ -430,6 +451,22 @@ class IndySdk : NSObject {
       }
       
       return completion
+    }
+    
+    func completionWithWalletHandle(_ resolve: @escaping RCTPromiseResolveBlock,
+                                    _ reject: @escaping RCTPromiseRejectBlock, _ walletId: String) -> (_ error: Error?, _ wh: IndyHandle) -> Void {
+        func completion(error: Error?,  wh: IndyHandle) -> Void {
+          let code = (error! as NSError).code
+          if code != 0 {
+            reject("\(code)", createJsonError(error!, code), error)
+          } else {
+            self.walletIdHandleDict[walletId] = wh
+            resolve(wh)
+          }
+        }
+        
+        return completion
+        
     }
     
     func completionWithIndyHandle(_ resolve: @escaping RCTPromiseResolveBlock,

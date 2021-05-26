@@ -588,6 +588,18 @@ const indy = {
     return JSON.parse(await IndySdk.proverGetCredentialsForProofReq(wh, JSON.stringify(proofRequest)))
   },
 
+  async proverSearchCredentialsForProofReq(wh: WalletHandle, proofRequest: ProofRequest, extraQuery): Promise<number> {
+    return IndySdk.proverSearchCredentialsForProofReq(wh, JSON.stringify(proofRequest), JSON.stringify(extraQuery))
+  },
+
+  async proverFetchCredentialsForProofReq(sh: WalletSearchHandle, itemReferent: string, count: number) {
+    return JSON.parse(await IndySdk.proverFetchCredentialsForProofReq(sh, itemReferent, count))
+  },
+
+  async proverCloseCredentialsSearchForProofReq(sh: WalletSearchHandle): Promise<void> {
+    return IndySdk.proverCloseCredentialsSearchForProofReq(sh)
+  },
+
   async proverCreateProof(
     wh: WalletHandle,
     proofReq: ProofRequest,
